@@ -5,18 +5,28 @@ phases:
     runtime-versions:
       java: corretto17
   pre_build:
-    commands:
-      - echo Nothing to do in the pre_build phase...
+      commands:
+        - echo Logging in to Amazon ECR...
+        - aws --version
+        - REPOSITORY_HOST=847107351171.dkr.ecr.ap-southeast-1.amazonaws.com
+        - aws ecr get-login-password | docker login --username AWS --password-stdin $REPOSITORY_HOST
+        - REPOSITORY_URI=$REPOSITORY_HOST/scventures
+        - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+        - IMAGE_TAG=${COMMIT_HASH:=latest}
   build:
     commands:
       - echo Build started on `date`
       - mvn install -DskipTests
-      - echo Build started on `date`
       - echo Building the Docker image...          
-      - docker build -t $GITHUB_REPO_NAME:$(date +%Y%m%d%H%M%S) .
+      - docker build -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
   post_build:
     commands:
       - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo Writing image definitions file...
+      - printf '[{"name":"hello-world","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 artifacts:
-  files:
-    - target/example-springboot-1.0-SNAPSHOT.jar
+    files: imagedefinitions.json
