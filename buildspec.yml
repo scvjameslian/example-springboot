@@ -4,6 +4,11 @@ version: 0.2
 # please check out build spec docs
 # https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html
 # https://docs.aws.amazon.com/codebuild/latest/userguide/sample-ecr.html
+# incoming parameters from code build
+# - TARGET_ACCOUNT_ID
+# - CROSS_ACCOUNT_ROLE
+# - CF_EXECUTION_ROLE
+
 phases:
   install:
     runtime-versions:
@@ -12,9 +17,9 @@ phases:
       commands:
         - echo Logging in to Amazon ECR...
         - aws --version
-        - REPOSITORY_HOST=847107351171.dkr.ecr.ap-southeast-1.amazonaws.com
+        - REPOSITORY_HOST=$TARGET_ACCOUNT_ID.dkr.ecr.ap-southeast-1.amazonaws.com
         - aws ecr get-login-password | docker login --username AWS --password-stdin $REPOSITORY_HOST
-        - REPOSITORY_URI=$REPOSITORY_HOST/scventures
+        - REPOSITORY_URI=$REPOSITORY_HOST/services
         - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
         - IMAGE_TAG=${COMMIT_HASH:=latest}
   build:
@@ -31,6 +36,6 @@ phases:
       - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Writing image definitions file...
-      - printf '[{"name":"test","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      # - printf '[{"name":"test","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 artifacts:
     files: imagedefinitions.json
