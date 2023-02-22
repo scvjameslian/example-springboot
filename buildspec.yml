@@ -23,7 +23,7 @@ phases:
         - 
         - REPOSITORY_URI=$REPOSITORY_HOST/services
         - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-        - IMAGE_TAG=${COMMIT_HASH:=latest}
+        - IMAGE_TAG=springboot-${COMMIT_HASH:=latest}
   build:
     commands:
       - echo Build started on `date`
@@ -36,8 +36,8 @@ phases:
       - echo Build completed on `date`
       - echo Pushing the Docker images...
       - docker push $REPOSITORY_URI:latest 
-      # - docker push $REPOSITORY_URI:$IMAGE_TAG
-      # - echo Writing image definitions file...
-      # - printf '[{"name":"test","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo Writing image definitions file...
+      - printf '[{"name":"test","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 artifacts:
     files: imagedefinitions.json
